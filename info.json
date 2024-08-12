@@ -1,0 +1,7 @@
+{
+    "operation": "download", 
+    "transfer": ["basic"], 
+    "objects": [
+        {"oid": "ff0e6a435769f62139e36eb0d88357561fb4448c4d8d0f77ac6827efbaa81955", "size": "79200267"}
+    ]
+}
