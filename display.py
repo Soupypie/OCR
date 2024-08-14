@@ -6,7 +6,12 @@ import numpy as np
 # Load the pickle file
 with open('emnist_train.pkl', 'rb') as file:
     images = pickle.load(file)
+    file.close()
 np.set_printoptions(threshold=np.inf)
 
-with open('print.txt', 'w') as txt_file:
-    pprint.pprint(images['data'], stream=txt_file)
+print("Loaded")
+
+for i in range(5):  # Display first 5 samples
+    pprint.pprint(f"Sample {i+1}:")
+    pprint.pprint(images['data'][i])
+    pprint.pprint(f"Label: {images['labels'][i]}")

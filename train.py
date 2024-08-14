@@ -66,7 +66,7 @@ model = build_model()
 model.summary()
 
 # Train the model
-model.fit(X_train, y_train, epochs=16, batch_size=32, validation_data=(X_val, y_val))
+model.fit(X_train, y_train, epochs=16, batch_size=32, validation_split=0.2)
 
 # Save the model
 model.save('model.keras')
