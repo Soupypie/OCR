@@ -4,7 +4,7 @@ from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.utils import to_categorical
 from keras.callbacks import EarlyStopping
 import keras
-import tensorflow
+import tensorflow as tf
 import pickle
 import numpy as np
 
