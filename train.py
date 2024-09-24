@@ -1,18 +1,39 @@
 import cv2
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from tensorflow.keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from keras.utils import to_categorical
+from keras.callbacks import EarlyStopping
+import keras
+import tensorflow
 import pickle
 import numpy as np
+
+from keras.models import Sequential
+from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
 def build_model():
     model = Sequential([
         Input(shape=(28, 28, 1)),
-        Conv2D(64, (3, 3), activation='relu'),
+        Conv2D(64, (3, 3), activation='relu', padding='VALID'),
         MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation='relu'),
+        Conv2D(64, (3, 3), activation='relu', padding='VALID'),
         MaxPooling2D((2, 2)),
         Flatten(),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
         Dense(256, activation='relu'),
         Dropout(0.5),
         Dense(256, activation='relu'),
@@ -22,19 +43,6 @@ def build_model():
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
-def preprocess_image(path):
-    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-    image = cv2.resize(image, (28, 28))  # Resize to 28x28 to match model input
-    image = image / 255.0  # Normalize pixel values
-    image = np.expand_dims(image, axis=-1)  # Add channel dimension
-    return image
-
-def output(image):
-    output = (image * 255).astype(np.uint8)  # Convert back to [0, 255] range and uint8 type
-    cv2.imwrite('output.jpg', output)
-
-image = preprocess_image("screenshot.png")
-output(image)
 
 # Load the data
 with open('emnist_train.pkl', 'rb') as f:
@@ -61,12 +69,31 @@ X_val = X_val.astype('float32') / 255.0
 y_train = to_categorical(y_train, num_classes=62)
 y_val = to_categorical(y_val, num_classes=62)
 
+datagen = ImageDataGenerator(
+    rotation_range=10,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    zoom_range=0.1
+)
+datagen.fit(X_train)
+
+class_weights = {i: 1 for i in range(62)}
+class_weights[7] = 2  # Example: Increase weight for class 'H'
+class_weights[1] = 2  # Example: Increase weight for class 'B'
+
 # Build and compile your model
 model = build_model()
 model.summary()
 
+early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+
 # Train the model
-model.fit(X_train, y_train, epochs=16, batch_size=32, validation_split=0.2)
+model.fit(X_train, y_train, epochs=64, batch_size=64, validation_split=0.2, callbacks=[early_stopping], class_weight=class_weights)
 
 # Save the model
 model.save('model.keras')
+
+model.summary()
+val_loss, val_accuracy = model.evaluate(X_val, y_val)
+
+print(f'Validation loss: {val_loss}, Validation accuracy: {val_accuracy}')
