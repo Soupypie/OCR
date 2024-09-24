@@ -44,15 +44,15 @@ import numpy as np
 import string
 
 # Example prediction output
-predictions = predicted_text
+# predictions = predicted_text
 # Define the index to character mapping
-index_to_char = {i: char for i, char in enumerate(string.ascii_lowercase + string.digits)}
+# index_to_char = {i: char for i, char in enumerate(string.ascii_lowercase + string.digits)}
 
 # Decode the predictions
-predicted_indices = np.argmax(predictions, axis=-1)
-predicted_text = ''.join(index_to_char[idx] for idx in predicted_indices)
+#
+# predicted_indices = np.argmax(predictions, axis=-1)
+# predicted_text = ''.join(index_to_char[idx] for idx in predicted_indices)
 
 print("Predicted Text:", predicted_text)
 
-# Output the result
-print("Predicted Text:", predicted_text)
+
