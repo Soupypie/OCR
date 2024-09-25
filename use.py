@@ -21,7 +21,7 @@ def predict_text(image):
     return predictions
 
 # Preprocess the image
-image = preprocess_image("screenshot.png")
+image = preprocess_image("output.jpg")
 
 # Predict the text
 predicted_text = predict_text(image)

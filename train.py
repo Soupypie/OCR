@@ -78,7 +78,7 @@ datagen = ImageDataGenerator(
 datagen.fit(X_train)
 
 class_weights = {i: 1 for i in range(62)}
-class_weights[7] = 2  # Example: Increase weight for class 'H'
+class_weights[17] = 2  # Example: Increase weight for class 'H'
 class_weights[1] = 2  # Example: Increase weight for class 'B'
 
 # Build and compile your model
@@ -88,7 +88,7 @@ model.summary()
 early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
 # Train the model
-model.fit(X_train, y_train, epochs=64, batch_size=64, validation_split=0.2, callbacks=[early_stopping], class_weight=class_weights)
+model.fit(X_train, y_train, epochs=16, batch_size=64, validation_split=0.2, callbacks=[early_stopping], class_weight=class_weights)
 
 # Save the model
 model.save('model.keras')
