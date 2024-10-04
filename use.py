@@ -21,7 +21,12 @@ def predict_text(image):
     return predictions
 
 # Preprocess the image
-image = preprocess_image("output.jpg")
+image = preprocess_image("input.png")
+
+image_output = image
+image_output.reshape(28,28)
+image_output = image_output*255.0
+cv2.imwrite("output.png", image_output)
 
 # Predict the text
 predicted_text = predict_text(image)
