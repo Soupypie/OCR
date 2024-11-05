@@ -1,5 +1,5 @@
 # Import necessary libraries
-import cv2  # Only required if using OpenCV for additional preprocessing
+import cv2
 import numpy as np
 import pickle
 import tensorflow as tf
@@ -9,8 +9,10 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import EarlyStopping
 
-# Check GPU availability for optimized training
+# Check GPU availability
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+if tf.config.list_physical_devices('GPU'):
+    tf.config.experimental.set_memory_growth(tf.config.list_physical_devices('GPU')[0], True)
 
 # Function to build and compile the CNN model
 def build_model():
@@ -23,7 +25,7 @@ def build_model():
         Flatten(),
         Dense(256, activation='relu'),
         Dropout(0.5),
-        Dense(128, activation='relu'),  # Reduce the number of units for efficiency
+        Dense(128, activation='relu'),
         Dropout(0.5),
         Dense(62, activation='softmax')  # Output layer for 62 classes
     ])
@@ -36,15 +38,19 @@ with open('emnist_train.pkl', 'rb') as f:
 with open('emnist_test.pkl', 'rb') as g:
     emnist_test = pickle.load(g)
 
-# Extract training and validation data and labels
+# Extract data and labels
 X_train, y_train = emnist_train['data'], emnist_train['labels']
 X_val, y_val = emnist_test['data'], emnist_test['labels']
 
-# Reshape and normalize image data to match model's expected input shape
+# Reshape and normalize image data
 X_train = X_train.reshape(-1, 28, 28, 1).astype('float32') / 255.0
 X_val = X_val.reshape(-1, 28, 28, 1).astype('float32') / 255.0
 
-# Convert labels to categorical format (one-hot encoding)
+# Check data shapes for debugging
+print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
+print(f"X_val shape: {X_val.shape}, y_val shape: {y_val.shape}")
+
+# Convert labels to categorical format
 y_train = to_categorical(y_train, num_classes=62)
 y_val = to_categorical(y_val, num_classes=62)
 
@@ -59,14 +65,14 @@ datagen.fit(X_train)
 
 # Build and compile the model
 model = build_model()
-model.summary()  # Display model architecture
+model.summary()
 
 # Early stopping to prevent overfitting
 early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
-# Train the model
+# Train the model with augmented data
 history = model.fit(
-    datagen.flow(X_train, y_train, batch_size=64),
+    datagen.flow(X_train, y_train, batch_size=64, color_mode='grayscale'),
     epochs=16,
     validation_data=(X_val, y_val),
     callbacks=[early_stopping]
@@ -75,6 +81,6 @@ history = model.fit(
 # Save the trained model
 model.save('emnist_model.keras')
 
-# Evaluate the model on the validation data
+# Evaluate the model
 val_loss, val_accuracy = model.evaluate(X_val, y_val)
 print(f'Validation loss: {val_loss:.4f}, Validation accuracy: {val_accuracy:.4f}')
