@@ -46,10 +46,10 @@ def build_model():
 
 # Load the data
 with open('emnist_train.pkl', 'rb') as f:
-    emnist = pickle.load(f)
+    emnist = f.read()
 
 with open('emnist_test.pkl', 'rb') as g:
-    validation = pickle.load(g)
+    validation = g.read()
 
 # Extract data and labels
 X_train = emnist['data']
