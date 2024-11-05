@@ -1,19 +1,18 @@
-import cv2
-from keras.models import Sequential
-from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from keras.utils import to_categorical
-from keras.callbacks import EarlyStopping
-import keras
-import tensorflow as tf
-import pickle
+# Import necessary libraries
+import cv2  # Only required if using OpenCV for additional preprocessing
 import numpy as np
-
-from keras.models import Sequential
-from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+import pickle
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import EarlyStopping
 
-print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+# Check GPU availability for optimized training
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
+# Function to build and compile the CNN model
 def build_model():
     model = Sequential([
         Input(shape=(28, 28, 1)),
@@ -24,51 +23,32 @@ def build_model():
         Flatten(),
         Dense(256, activation='relu'),
         Dropout(0.5),
-        Dense(256, activation='relu'),
+        Dense(128, activation='relu'),  # Reduce the number of units for efficiency
         Dropout(0.5),
-        Dense(256, activation='relu'),
-        Dropout(0.5),
-        Dense(256, activation='relu'),
-        Dropout(0.5),
-        Dense(256, activation='relu'),
-        Dropout(0.5),
-        Dense(256, activation='relu'),
-        Dropout(0.5),
-        Dense(256, activation='relu'),
-        Dropout(0.5),
-        Dense(256, activation='relu'),
-        Dropout(0.5),
-        Dense(62, activation='softmax')  # 62 classes for uppercase, lowercase, and digits
+        Dense(62, activation='softmax')  # Output layer for 62 classes
     ])
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
-
-# Load the data
+# Load and preprocess the EMNIST dataset
 with open('emnist_train.pkl', 'rb') as f:
-    emnist = pickle.load(f)
-
+    emnist_train = pickle.load(f)
 with open('emnist_test.pkl', 'rb') as g:
-    validation = pickle.load(g)
+    emnist_test = pickle.load(g)
 
-# Extract data and labels
-X_train = emnist['data']
-y_train = emnist['labels']
-X_val = validation['data']
-y_val = validation['labels']
+# Extract training and validation data and labels
+X_train, y_train = emnist_train['data'], emnist_train['labels']
+X_val, y_val = emnist_test['data'], emnist_test['labels']
 
-# Reshape the data to match the input shape of your model
-X_train = X_train.reshape(-1, 28, 28, 1)
-X_val = X_val.reshape(-1, 28, 28, 1)
+# Reshape and normalize image data to match model's expected input shape
+X_train = X_train.reshape(-1, 28, 28, 1).astype('float32') / 255.0
+X_val = X_val.reshape(-1, 28, 28, 1).astype('float32') / 255.0
 
-# Normalize the data
-X_train = X_train.astype('float32') / 255.0
-X_val = X_val.astype('float32') / 255.0
-
-# Convert labels to one-hot encoding
+# Convert labels to categorical format (one-hot encoding)
 y_train = to_categorical(y_train, num_classes=62)
 y_val = to_categorical(y_val, num_classes=62)
 
+# Set up data augmentation
 datagen = ImageDataGenerator(
     rotation_range=10,
     width_shift_range=0.1,
@@ -77,23 +57,24 @@ datagen = ImageDataGenerator(
 )
 datagen.fit(X_train)
 
-class_weights = {i: 1 for i in range(62)}
-class_weights[17] = 2  # Example: Increase weight for class 'H'
-class_weights[1] = 2  # Example: Increase weight for class 'B'
-
-# Build and compile your model
+# Build and compile the model
 model = build_model()
-model.summary()
+model.summary()  # Display model architecture
 
-early_stopping = keras.callbacks.EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+# Early stopping to prevent overfitting
+early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
 # Train the model
-model.fit(X_train, y_train, epochs=16, batch_size=64, validation_split=0.2, callbacks=[early_stopping], class_weight=class_weights)
+history = model.fit(
+    datagen.flow(X_train, y_train, batch_size=64),
+    epochs=16,
+    validation_data=(X_val, y_val),
+    callbacks=[early_stopping]
+)
 
-# Save the model
-model.save('model.keras')
+# Save the trained model
+model.save('emnist_model.keras')
 
-model.summary()
+# Evaluate the model on the validation data
 val_loss, val_accuracy = model.evaluate(X_val, y_val)
-
-print(f'Validation loss: {val_loss}, Validation accuracy: {val_accuracy}')
+print(f'Validation loss: {val_loss:.4f}, Validation accuracy: {val_accuracy:.4f}')
