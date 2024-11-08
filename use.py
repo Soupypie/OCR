@@ -3,7 +3,7 @@ from tensorflow.keras.models import load_model
 import numpy as np
 
 # Load the pre-trained model
-model = load_model('model.keras')
+model = load_model('emnist_model.keras')
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Character set
@@ -15,7 +15,7 @@ def preprocess_image(path):
         raise ValueError(f"Error: Unable to load image at path: {path}")
     image = cv2.resize(image, (28, 28))  # Resize to a fixed size (width, height)
     image = image / 255.0  # Normalize pixel values to [0, 1]
-    image = image.reshape(28, 28, 1) 
+    image = image.reshape(1, 28, 28, 1) 
     return image.astype('float32')
 
 def predict_text(image):
