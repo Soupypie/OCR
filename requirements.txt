@@ -3,3 +3,5 @@ keras
 pandas
 numpy
 opencv-python
+keras.layers
+keras.preprocessing.image
