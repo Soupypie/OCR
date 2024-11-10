@@ -6,6 +6,7 @@ from keras._tf_keras.keras.preprocessing.image import ImageDataGenerator
 from keras._tf_keras.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras._tf_keras.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 import kerastuner as kt
+import json
 
 # Check GPU availability
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
@@ -85,21 +86,33 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weig
 model_checkpoint = ModelCheckpoint('best_emnist_model.keras', monitor='val_accuracy', save_best_only=True)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=0.00001)
 
-# Train the model with augmented data
+# Train the model with augmented data and add verbose logging
 tuner.search(datagen.flow(X_train, y_train, batch_size=64),
              epochs=50,
              validation_data=(X_val, y_val),
-             callbacks=[early_stopping, model_checkpoint, reduce_lr])
+             callbacks=[early_stopping, model_checkpoint, reduce_lr],
+             verbose=1)  # Set verbose=1 to track tuning progress
 
 # Get the optimal hyperparameters
 best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+
+# Save the optimal hyperparameters to a JSON file
+best_hps_dict = {
+    "units": best_hps.get('units'),
+    "learning_rate": best_hps.get('learning_rate')
+}
+with open('best_hyperparameters.json', 'w') as json_file:
+    json.dump(best_hps_dict, json_file)
 
 print(f"""
 The hyperparameter search is complete. The optimal number of units in the first convolutional layer is {best_hps.get('units')} and the optimal learning rate for the optimizer is {best_hps.get('learning_rate')}.
 """)
 
-# Build the model with the optimal hyperparameters and train it
+# Build the model with the optimal hyperparameters and display model summary
 model = tuner.hypermodel.build(best_hps)
+model.summary()  # Display model summary
+
+# Train the final model
 history = model.fit(
     datagen.flow(X_train, y_train, batch_size=64),
     epochs=50,
@@ -110,6 +123,16 @@ history = model.fit(
 # Save the final trained model
 model.save('emnist_model_final.keras')
 
-# Evaluate the model
+# Evaluate the model on the validation data
 val_loss, val_accuracy = model.evaluate(X_val, y_val)
 print(f'Validation loss: {val_loss:.4f}, Validation accuracy: {val_accuracy:.4f}')
+
+# Additional evaluation on test data (if available)
+# Uncomment and use if test data is separate from validation data
+# with open('emnist_test.pkl', 'rb') as h:
+#     emnist_test = pickle.load(h)
+# X_test, y_test = emnist_test['data'], emnist_test['labels']
+# X_test = X_test.reshape(-1, 28, 28, 1).astype('float32') / 255.0
+# y_test = keras.utils.to_categorical(y_test, num_classes=62)
+# test_loss, test_accuracy = model.evaluate(X_test, y_test)
+# print(f'Test loss: {test_loss:.4f}, Test accuracy: {test_accuracy:.4f}')
