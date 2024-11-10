@@ -6,7 +6,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator, img_to_arra
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization, Input
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Adam
-import kerastuner as kt
+import keras_tuner as kt
 import json
 import os
 
