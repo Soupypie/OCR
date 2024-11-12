@@ -81,11 +81,13 @@ model.compile(optimizer='adam',
 
 # Train the model
 history = model.fit(
-    # datagen.flow(train_data, train_labels, batch_size=64),
+    train_data, train_labels,  # Use the original training data directly
     validation_data=(test_data, test_labels),
     epochs=15,
+    batch_size=64,
     callbacks=[LearningRateScheduler(lr_schedule), early_stopping]
 )
+
 
 # Evaluate the model
 test_loss, test_acc = model.evaluate(test_data, test_labels)
