@@ -1,0 +1,1 @@
+{"conv_blocks": 2, "filters": [192, 224], "dense_units": 448, "learning_rate": 0.0001}
