@@ -7,7 +7,12 @@ import string
 model = tf.keras.models.load_model('emnist_ocr_model.keras')
 
 # Define the character mapping for labels (0-9, A-Z, a-z)
-characters = list(string.digits + string.ascii_uppercase + string.ascii_lowercase)
+characters1 = list(string.digits + string.ascii_uppercase + string.ascii_lowercase)
+characters2 = list(string.digits + string.ascii_lowercase + string.ascii_uppercase)
+characters3 = list(string.ascii_uppercase + string.digits + string.ascii_lowercase)
+characters4 = list(string.ascii_uppercase + string.ascii_lowercase + string.digits)
+characters5 = list(string.ascii_lowercase + string.ascii_uppercase + string.digits)
+characters6 = list(string.ascii_lowercase + string.digits + string.ascii_uppercase)
 
 def preprocess_image(image_path):
     """
@@ -46,10 +51,12 @@ def predict_character(image_path):
     predicted_index = np.argmax(prediction)
     
     # Map the index to the corresponding character
-    predicted_character = characters[predicted_index]
+    predicted_characters = [characters1[predicted_index],characters2[predicted_index],characters3[predicted_index],characters4[predicted_index],characters5[predicted_index],characters6[predicted_index]]
     
-    return predicted_character
+    return predicted_characters
 
 # Test the function on 'input.png'
-predicted_character = predict_character('input.png')
-print(f"The predicted character is: {predicted_character}")
+predicted_characters = predict_character('input.png')
+print("The predicted character is: ")
+for i in range(predicted_characters):
+    print(predicted_characters[i])
