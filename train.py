@@ -66,7 +66,7 @@ model = Sequential([
 
 # Learning rate scheduler
 def lr_schedule(epoch, lr):
-    return lr * 0.5 if epoch // 10  == 0 else lr  # Halve the learning rate after 10 epochs
+    return lr * 0.5 if epoch > 10 else lr  # Halve the learning rate after 10 epochs
 
 # Early stopping
 early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
@@ -80,7 +80,7 @@ model.compile(optimizer='adam',
 history = model.fit(
     datagen.flow(train_data, train_labels, batch_size=64),
     validation_data=(test_data, test_labels),
-    epochs=15,
+    epochs=50,
     callbacks=[LearningRateScheduler(lr_schedule), early_stopping]
 )
 
