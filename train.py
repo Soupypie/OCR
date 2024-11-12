@@ -29,7 +29,7 @@ test_data /= 255.0
 num_classes = len(np.unique(train_labels))
 train_labels = to_categorical(train_labels, num_classes)
 test_labels = to_categorical(test_labels, num_classes)
-
+"""
 # Data augmentation setup
 datagen = ImageDataGenerator(
     rotation_range=10,
@@ -39,7 +39,7 @@ datagen = ImageDataGenerator(
     shear_range=0.1
 )
 datagen.fit(train_data)
-
+"""
 # Define a more complex model architecture with Batch Normalization and Dropout
 model = Sequential([
     Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),

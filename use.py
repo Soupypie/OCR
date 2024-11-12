@@ -6,20 +6,22 @@ import string
 # Load the trained model
 model = tf.keras.models.load_model('emnist_ocr_model.keras')
 
-# Define the character mapping for labels (0-9, A-Z, a-z)
-characters1 = list(string.digits + string.ascii_uppercase + string.ascii_lowercase)
+# Define possible character mappings for labels (0-9, A-Z, a-z variations)
+# characters1 = list(string.digits + string.ascii_uppercase + string.ascii_lowercase)
 characters2 = list(string.digits + string.ascii_lowercase + string.ascii_uppercase)
+"""
 characters3 = list(string.ascii_uppercase + string.digits + string.ascii_lowercase)
 characters4 = list(string.ascii_uppercase + string.ascii_lowercase + string.digits)
 characters5 = list(string.ascii_lowercase + string.ascii_uppercase + string.digits)
 characters6 = list(string.ascii_lowercase + string.digits + string.ascii_uppercase)
+"""
 
 def preprocess_image(image_path):
     """
     Preprocess the image to the required input format for the model.
     - Load the image as grayscale.
     - Resize it to 28x28 pixels.
-    - Invert colors (if necessary, assuming white on black).
+    - Invert colors (assuming white on black).
     - Normalize to range [0, 1].
     """
     # Load the image as grayscale
@@ -37,26 +39,25 @@ def preprocess_image(image_path):
 
     return img_array
 
-def predict_character(image_path):
+def predict_top_characters(image_path, top_k=3):
     """
-    Predicts the character in the given image.
+    Predicts the top K characters in the given image across all mappings.
     """
     # Preprocess the input image
     processed_image = preprocess_image(image_path)
     
     # Make a prediction
-    prediction = model.predict(processed_image)
+    prediction = model.predict(processed_image).flatten()
     
-    # Get the index of the highest probability
-    predicted_index = np.argmax(prediction)
+    # Get the indices of the top K highest probabilities
+    top_indices = np.argsort(prediction)[-top_k:][::-1]
     
-    # Map the index to the corresponding character
-    predicted_characters = [characters1[predicted_index],characters2[predicted_index],characters3[predicted_index],characters4[predicted_index],characters5[predicted_index],characters6[predicted_index]]
-    
-    return predicted_characters
+    # Print top K predictions across all mappings
+    print("Top predictions for each mapping:")
+    for i, char_map in enumerate([characters2]):
+        print(f"\nMapping {i+1}:")
+        for idx in top_indices:
+            print(f"Character: {char_map[idx]}, Confidence: {prediction[idx]:.4f}")
 
 # Test the function on 'input.png'
-predicted_characters = predict_character('input.png')
-print("The predicted character is: ")
-for i in range(predicted_characters):
-    print(predicted_characters[i])
+predict_top_characters('4.png', top_k=10)
