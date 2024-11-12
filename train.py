@@ -66,7 +66,10 @@ model = Sequential([
 
 # Learning rate scheduler
 def lr_schedule(epoch, lr):
-    return lr * 0.5 if epoch > 10 else lr  # Halve the learning rate after 10 epochs
+    if epoch % 10 == 0: 
+        return lr * 0.5
+    else:
+        return lr
 
 # Early stopping
 early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
