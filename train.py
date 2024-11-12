@@ -83,7 +83,7 @@ model.compile(optimizer='adam',
 history = model.fit(
     datagen.flow(train_data, train_labels, batch_size=64),
     validation_data=(test_data, test_labels),
-    epochs=50,
+    epochs=15,
     callbacks=[LearningRateScheduler(lr_schedule), early_stopping]
 )
 
