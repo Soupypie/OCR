@@ -24,7 +24,7 @@ def predict_text(image):
 
 # Preprocess the image
 try:
-    image = preprocess_image("input.png")
+    image = preprocess_image("P.png")
     image_output = image.reshape(28, 28) * 255.0
     cv2.imwrite("output.png", image_output)
 
