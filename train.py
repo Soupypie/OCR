@@ -2,7 +2,9 @@ import pickle
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, BatchNormalization, Dropout
+from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.utils import to_categorical
 
 # Load the EMNIST dataset
@@ -28,16 +30,46 @@ num_classes = len(np.unique(train_labels))
 train_labels = to_categorical(train_labels, num_classes)
 test_labels = to_categorical(test_labels, num_classes)
 
-# Define the model architecture
+# Data augmentation setup
+datagen = ImageDataGenerator(
+    rotation_range=10,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    zoom_range=0.1,
+    shear_range=0.1
+)
+datagen.fit(train_data)
+
+# Define a more complex model architecture with Batch Normalization and Dropout
 model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    BatchNormalization(),
     MaxPooling2D((2, 2)),
-    Conv2D(64, (3, 3), activation='relu'),
+    Dropout(0.25),
+    
+    Conv2D(128, (3, 3), activation='relu'),
+    BatchNormalization(),
     MaxPooling2D((2, 2)),
+    Dropout(0.25),
+    
+    Conv2D(256, (3, 3), activation='relu'),
+    BatchNormalization(),
+    MaxPooling2D((2, 2)),
+    Dropout(0.25),
+    
     Flatten(),
-    Dense(128, activation='relu'),
+    Dense(512, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.5),
     Dense(num_classes, activation='softmax')
 ])
+
+# Learning rate scheduler
+def lr_schedule(epoch, lr):
+    return lr * 0.5 if epoch > 10 else lr  # Halve the learning rate after 10 epochs
+
+# Early stopping
+early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
 
 # Compile the model
 model.compile(optimizer='adam', 
@@ -45,14 +77,16 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 
 # Train the model
-model.fit(train_data, train_labels, 
-          validation_data=(test_data, test_labels), 
-          epochs=10, 
-          batch_size=64)
+history = model.fit(
+    datagen.flow(train_data, train_labels, batch_size=64),
+    validation_data=(test_data, test_labels),
+    epochs=50,
+    callbacks=[LearningRateScheduler(lr_schedule), early_stopping]
+)
 
 # Evaluate the model
 test_loss, test_acc = model.evaluate(test_data, test_labels)
 print(f"Test accuracy: {test_acc:.4f}")
 
-# Save the model for future use
-model.save('emnist_ocr_model.h5')
+# Save the model in .keras format
+model.save('emnist_ocr_model.keras')
