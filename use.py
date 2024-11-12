@@ -3,7 +3,7 @@ from tensorflow.keras.models import load_model
 import numpy as np
 
 # Load the pre-trained model
-model = load_model('emnist_model.keras')
+model = load_model('emnist_model_final.keras')
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Character set
