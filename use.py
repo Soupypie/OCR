@@ -1,39 +1,55 @@
-import cv2
-from tensorflow.keras.models import load_model
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import string
 
-# Load the pre-trained model
-model = load_model('emnist_model_final.keras')
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+# Load the trained model
+model = tf.keras.models.load_model('emnist_ocr_model.keras')
 
-# Character set
-char_set = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+# Define the character mapping for labels (0-9, A-Z, a-z)
+characters = list(string.digits + string.ascii_uppercase + string.ascii_lowercase)
 
-def preprocess_image(path):
-    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-    if image is None:
-        raise ValueError(f"Error: Unable to load image at path: {path}")
-    image = cv2.resize(image, (28, 28))  # Resize to a fixed size (width, height)
-    image = image / 255.0  # Normalize pixel values to [0, 1]
-    image = image.reshape(1, 28, 28, 1) 
-    return image.astype('float32')
+def preprocess_image(image_path):
+    """
+    Preprocess the image to the required input format for the model.
+    - Load the image as grayscale.
+    - Resize it to 28x28 pixels.
+    - Invert colors (if necessary, assuming white on black).
+    - Normalize to range [0, 1].
+    """
+    # Load the image as grayscale
+    img = load_img(image_path, color_mode="grayscale", target_size=(28, 28))
+    
+    # Convert the image to a numpy array and invert colors if needed
+    img_array = img_to_array(img)
+    img_array = 255 - img_array  # Assuming white background, black text
+    
+    # Normalize to range [0, 1]
+    img_array /= 255.0
 
-def predict_text(image):
-    predictions = model.predict(image)
-    return predictions
+    # Add a batch dimension
+    img_array = np.expand_dims(img_array, axis=0)
 
-# Preprocess the image
-try:
-    image = preprocess_image("P.png")
-    image_output = image.reshape(28, 28) * 255.0
-    cv2.imwrite("output.png", image_output)
+    return img_array
 
-    # Predict the text
-    predicted_text = predict_text(image)
+def predict_character(image_path):
+    """
+    Predicts the character in the given image.
+    """
+    # Preprocess the input image
+    processed_image = preprocess_image(image_path)
+    
+    # Make a prediction
+    prediction = model.predict(processed_image)
+    
+    # Get the index of the highest probability
+    predicted_index = np.argmax(prediction)
+    
+    # Map the index to the corresponding character
+    predicted_character = characters[predicted_index]
+    
+    return predicted_character
 
-    # Decode the text
-    decoded_text = ''.join([char_set[np.argmax(row)] for row in predicted_text.reshape(-1, len(char_set))])
-    print("Predicted Text:", decoded_text)
-
-except Exception as e:
-    print(f"An error occurred: {e}")
+# Test the function on 'input.png'
+predicted_character = predict_character('input.png')
+print(f"The predicted character is: {predicted_character}")
