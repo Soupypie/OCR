@@ -10,25 +10,71 @@ from tensorflow.keras.datasets import mnist
 from matplotlib import pyplot as plt
 import cv2
 import tensorflow_datasets as tfds
+import array_record
+from tqdm import tqdm  # Import tqdm for progress bar
 
-ds = tfds.load('emnist')
+# Load the EMNIST dataset
+ds_train = tfds.load('emnist', split='train', shuffle_files=True)
+ds_test = tfds.load('emnist', split='test', shuffle_files=True)
 
-# Normalize pixel values (0-1 range)
+# Convert the dataset to numpy arrays
+ds_train = tfds.as_numpy(ds_train)
+ds_test = tfds.as_numpy(ds_test)
 
-# Convert labels to categorical (for multi-class classification)
-num_classes = len(np.unique(labels))
-train_labels = to_categorical(labels, num_classes)
-"""
-# Data augmentation setup
-datagen = ImageDataGenerator(
-    rotation_range=10,
-    width_shift_range=0.1,
-    height_shift_range=0.1,
-    zoom_range=0.1,
-    shear_range=0.1
-)
-datagen.fit(train_data)
-"""
+# Initialize lists to hold the image data and labels
+trainX, trainy = [], []
+testX, testy = [], []
+
+# Check if preprocessed data already exists
+try:
+    # Attempt to load preprocessed data from disk
+    trainX = np.load('.data/trainX.npy')
+    trainy = np.load('.data/trainy.npy')
+    testX = np.load('.data/testX.npy')
+    testy = np.load('.data/testy.npy')
+    print("Preprocessed data loaded from disk.")
+except FileNotFoundError:
+    # If data files do not exist, preprocess and save them
+    print("Preprocessing data, this may take some time...")
+
+    # Iterate over the train dataset with progress bar
+    for example in tqdm(ds_train, desc="Processing training data", total=len(ds_train)):
+        trainX.append(example['image'])  # Add the image to trainX
+        trainy.append(example['label'])  # Add the label to trainy
+
+    # Convert lists to numpy arrays
+    trainX = np.array(trainX)
+    trainy = np.array(trainy)
+
+    # Iterate over the test dataset with progress bar
+    for example in tqdm(ds_test, desc="Processing test data", total=len(ds_test)):
+        testX.append(example['image'])  # Add the image to testX
+        testy.append(example['label'])  # Add the label to testy
+
+    # Convert lists to numpy arrays
+    testX = np.array(testX)
+    testy = np.array(testy)
+
+    # Save the preprocessed data to disk
+    np.save('.data/trainX.npy', trainX)
+    np.save('.data/trainy.npy', trainy)
+    np.save('.data/testX.npy', testX)
+    np.save('.data/testy.npy', testy)
+    print("Preprocessed data saved to disk.")
+
+# Verify the data shapes
+print(f"trainX shape: {trainX.shape}, trainy shape: {trainy.shape}")
+print(f"testX shape: {testX.shape}, testy shape: {testy.shape}")
+
+# Find the unique classes in trainy
+unique_classes = np.unique(trainy)
+
+# Get the number of unique classes
+num_classes = len(unique_classes)
+
+print(f"Number of unique classes in trainy: {num_classes}")
+print(f"Unique classes: {unique_classes}")
+
 # Define a more complex model architecture with Batch Normalization and Dropout
 model = Sequential([
     Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
@@ -41,45 +87,48 @@ model = Sequential([
     MaxPooling2D((2, 2)),
     Dropout(0.25),
     
-    Conv2D(256, (3, 3), activation='relu'),
-    BatchNormalization(),
-    MaxPooling2D((2, 2)),
-    Dropout(0.25),
-    
     Flatten(),
+    Dense(512, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.5),
+    
     Dense(512, activation='relu'),
     BatchNormalization(),
     Dropout(0.5),
     Dense(num_classes, activation='softmax')
 ])
 
-# Learning rate scheduler
+# Define the learning rate scheduler
 def lr_schedule(epoch, lr):
-    if epoch % 10 == 0: 
-        return lr * 0.5
+    if epoch < 10:
+        return lr  # No change for the first 10 epochs
     else:
-        return lr
+        return lr * 0.9  # Reduce learning rate by 10% after epoch 10
 
-# Early stopping
-early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
+# Create the LearningRateScheduler callback
+lr_scheduler = LearningRateScheduler(lr_schedule)
 
-# Compile the model
-model.compile(optimizer='adam', 
-              loss='categorical_crossentropy', 
-              metrics=['accuracy'])
+# Define the early stopping callback
+early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-# Train the model
+# One-hot encode the labels
+trainy_one_hot = tf.keras.utils.to_categorical(trainy, num_classes=62)
+testy_one_hot = tf.keras.utils.to_categorical(testy, num_classes=62)
+
+# Compile the model using categorical_crossentropy
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Fit the model
 history = model.fit(
-    train_data, train_labels,  # Use the original training data directly
-    validation_data=(test_data, test_labels),
+    trainX, trainy_one_hot,  # Use one-hot encoded labels
+    validation_split = 0.1,
     epochs=15,
     batch_size=64,
-    callbacks=[LearningRateScheduler(lr_schedule), early_stopping]
+    callbacks=[lr_scheduler, early_stopping]
 )
 
-
 # Evaluate the model
-test_loss, test_acc = model.evaluate(test_data, test_labels)
+test_loss, test_acc = model.evaluate(testX, testy)
 print(f"Test accuracy: {test_acc:.4f}")
 
 # Save the model in .keras format
