@@ -18,8 +18,8 @@ train_data, train_labels = load_data('emnist_train.pkl')
 test_data, test_labels = load_data('emnist_test.pkl')
 
 # Preprocess the data
-train_data = np.array(train_data).reshape(-1, 28, 28, 1).astype('float32')
-test_data = np.array(test_data).reshape(-1, 28, 28, 1).astype('float32')
+train_data = np.array(train_data).reshape(-1, 128, 128, 1).astype('float32')
+test_data = np.array(test_data).reshape(-1, 128, 128, 1).astype('float32')
 
 # Normalize pixel values (0-1 range)
 train_data /= 255.0
@@ -42,7 +42,7 @@ datagen.fit(train_data)
 """
 # Define a more complex model architecture with Batch Normalization and Dropout
 model = Sequential([
-    Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    Conv2D(64, (3, 3), activation='relu', input_shape=(128, 128, 1)),
     BatchNormalization(),
     MaxPooling2D((2, 2)),
     Dropout(0.25),
