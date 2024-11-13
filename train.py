@@ -10,10 +10,14 @@ from tensorflow.keras.datasets import mnist
 from matplotlib import pyplot as plt
 import tensorflow_datasets as tfds
 
-ds = tfds.load('emnist', split='train').as_data_source()
-# Assuming `ds` is your dataset
+# Load the EMNIST dataset (train split)
+ds = tfds.load('emnist', split='train', as_supervised=True)
+
+# Apply transformations to fix the image orientation (flip and rotate)
 ds = ds.map(lambda image, label: (tf.transpose(image, perm=[1, 0, 2]), label))
 
+# Optionally, shuffle, batch, and prefetch for performance
+ds = ds.shuffle(1000).batch(32).prefetch(tf.data.experimental.AUTOTUNE)
 
 # Preprocess the data
 train_data = np.array(ds['image']).reshape(-1, 28, 28, 1).astype('float32')
