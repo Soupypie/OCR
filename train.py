@@ -94,7 +94,7 @@ history = model.fit(
 )
 
 # Evaluate the model
-test_loss, test_acc = model.evaluate(testX, testy)
+test_loss, test_acc = model.evaluate(testX, testy_one_hot)
 print(f"Test accuracy: {test_acc:.4f}")
 
 # Save the model in .keras format
