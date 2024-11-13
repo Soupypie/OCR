@@ -6,29 +6,27 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, BatchN
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.datasets import mnist
+from matplotlib import pyplot as plt
 
-# Load the EMNIST dataset
-def load_data(file_path):
-    with open(file_path, 'rb') as file:
-        data_dict = pickle.load(file)
-    return data_dict['data'], data_dict['labels']
-
-# Load training and testing data
-train_data, train_labels = load_data('emnist_train.pkl')
-test_data, test_labels = load_data('emnist_test.pkl')
+# load dataset
+(trainX, trainy), (testX, testy) = mnist.load_data()
+# summarize loaded dataset
+print('Train: X=%s, y=%s' % (trainX.shape, trainy.shape))
+print('Test: X=%s, y=%s' % (testX.shape, testy.shape))
 
 # Preprocess the data
-train_data = np.array(train_data).reshape(-1, 128, 128, 1).astype('float32')
-test_data = np.array(test_data).reshape(-1, 128, 128, 1).astype('float32')
+train_data = np.array(trainX).reshape(-1, 28, 28, 1).astype('float32')
+test_data = np.array(testX).reshape(-1, 28, 28, 1).astype('float32')
 
 # Normalize pixel values (0-1 range)
 train_data /= 255.0
 test_data /= 255.0
 
 # Convert labels to categorical (for multi-class classification)
-num_classes = len(np.unique(train_labels))
-train_labels = to_categorical(train_labels, num_classes)
-test_labels = to_categorical(test_labels, num_classes)
+num_classes = len(np.unique(trainy))
+train_labels = to_categorical(trainy, num_classes)
+test_labels = to_categorical(testy, num_classes)
 """
 # Data augmentation setup
 datagen = ImageDataGenerator(
@@ -42,7 +40,7 @@ datagen.fit(train_data)
 """
 # Define a more complex model architecture with Batch Normalization and Dropout
 model = Sequential([
-    Conv2D(64, (3, 3), activation='relu', input_shape=(128, 128, 1)),
+    Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
     BatchNormalization(),
     MaxPooling2D((2, 2)),
     Dropout(0.25),
