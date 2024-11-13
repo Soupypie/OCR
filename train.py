@@ -13,6 +13,7 @@ import tensorflow_datasets as tfds
 import array_record
 from tqdm import tqdm  # Import tqdm for progress bar
 
+
 # Initialize lists to hold the image data and labels
 trainX, trainy = [], []
 testX, testy = [], []
