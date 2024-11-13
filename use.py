@@ -26,6 +26,7 @@ def preprocess_image(image_path):
     """
     # Load the image as grayscale
     img = load_img(image_path, color_mode="grayscale", target_size=(28, 28))
+    img.transpose()
     
     # Convert the image to a numpy array and invert colors if needed
     img_array = img_to_array(img)

@@ -10,8 +10,10 @@ from tensorflow.keras.datasets import mnist
 from matplotlib import pyplot as plt
 import tensorflow_datasets as tfds
 
-ds = tfds.load('emnist', split='train', shuffle_files=True)
-assert isinstance(ds, tf.data.Dataset)
+ds = tfds.load('emnist', split='train')
+# Assuming `ds` is your dataset
+ds = ds.map(lambda image, label: (tf.transpose(image, perm=[1, 0, 2]), label))
+
 
 # Preprocess the data
 train_data = np.array(ds['image']).reshape(-1, 28, 28, 1).astype('float32')
