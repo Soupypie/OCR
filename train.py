@@ -8,17 +8,42 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.datasets import mnist
 from matplotlib import pyplot as plt
+import cv2
 import tensorflow_datasets as tfds
 
 # Load the EMNIST dataset (train split)
-builder = tfds.builder('my_dataset')
-ds = builder.as_data_source()
+builder = tfds.builder('emnist')
+builder.download_and_prepare()
 
-# Apply transformations to fix the image orientation (flip and rotate)
-ds = ds.map(lambda image, label: (tf.transpose(image, perm=[1, 0, 2]), label))
+data_source = builder.as_data_source()
 
-# Optionally, shuffle, batch, and prefetch for performance
-ds = ds.shuffle(1000).batch(32).prefetch(tf.data.experimental.AUTOTUNE)
+# Using the keys() method
+keys_list = list(data_source.keys())
+
+# Printing the keys
+print(keys_list)
+
+# Access the 'train' and 'test' ArrayRecordDataSource objects
+train_data_source = data_source['train']
+test_data_source = data_source['test']
+
+# Convert the ArrayRecordDataSource to a tf.data.Dataset (for better processing)
+train_ds = tf.data.Dataset.from_tensor_slices(train_data_source)
+test_ds = tf.data.Dataset.from_tensor_slices(test_data_source)
+
+# Function to decode and preprocess each example
+def preprocess_example(example):
+    # Decode image if it's in raw format (use tf.io.decode_image for common image formats)
+    image = example['image']
+    image = tf.io.decode_image(image, channels=3)  # Decode as RGB image
+    image = tf.transpose(image, perm=[1, 0, 2]) / 255.0  # Transpose and normalize image
+
+    label = example['label']
+    return {'image': image, 'label': label}
+
+# Apply preprocessing using map()
+train_ds = train_ds.map(preprocess_example)
+test_ds = test_ds.map(preprocess_example)
 
 # Preprocess the data
 train_data = np.array(ds['image']).reshape(-1, 28, 28, 1).astype('float32')
