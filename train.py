@@ -1,31 +1,70 @@
+import pickle
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, BatchNormalization, Dropout
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.datasets import mnist
+from matplotlib import pyplot as plt
+import cv2
 import tensorflow_datasets as tfds
 
-# Load the dataset as tf.data.Dataset
-train_data, test_data = tfds.load('emnist', split=['train', 'test'], as_supervised=True)
+# Load the EMNIST dataset (train split)
+builder = tfds.builder('emnist')
+builder.download_and_prepare()
+
+data_source = builder.as_data_source()
+
+# Using the keys() method
+keys_list = list(data_source.keys())
+
+# Printing the keys
+print(keys_list)
+
+# Access the 'train' and 'test' ArrayRecordDataSource objects
+train_data_source = data_source['train']
+test_data_source = data_source['test']
+
+# Convert the ArrayRecordDataSource to a tf.data.Dataset (for better processing)
+train_ds = tf.data.Dataset.from_tensor_slices(train_data_source)
+test_ds = tf.data.Dataset.from_tensor_slices(test_data_source)
+
+# Function to decode and preprocess each example
+def preprocess_example(example):
+    # Decode image if it's in raw format (use tf.io.decode_image for common image formats)
+    image = example['image']
+    image = tf.io.decode_image(image, channels=3)  # Decode as RGB image
+    image = tf.transpose(image, perm=[1, 0, 2]) / 255.0  # Transpose and normalize image
+
+    label = example['label']
+    return {'image': image, 'label': label}
+
+# Apply preprocessing using map()
+train_ds = train_ds.map(preprocess_example)
+test_ds = test_ds.map(preprocess_example)
 
 # Preprocess the data
-def preprocess_image(image, label):
-    # Normalize pixel values to [0, 1]
-    image = tf.cast(image, tf.float32) / 255.0
-    # Reshape to add a channel dimension (28, 28, 1)
-    image = tf.reshape(image, (28, 28, 1))
-    return image, label
+train_data = np.array(ds['image']).reshape(-1, 28, 28, 1).astype('float32')
+labels = np.array(ds['labels'])
 
-train_ds = train_data.map(preprocess_image).batch(64)
-test_ds = test_data.map(preprocess_image).batch(64)
+# Normalize pixel values (0-1 range)
 
 # Convert labels to categorical (for multi-class classification)
-def preprocess_labels(image, label):
-    label = tf.one_hot(label, depth=62)  # EMNIST has 62 classes
-    return image, label
-
-train_ds = train_ds.map(preprocess_labels)
-test_ds = test_ds.map(preprocess_labels)
-
+num_classes = len(np.unique(labels))
+train_labels = to_categorical(labels, num_classes)
+"""
+# Data augmentation setup
+datagen = ImageDataGenerator(
+    rotation_range=10,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    zoom_range=0.1,
+    shear_range=0.1
+)
+datagen.fit(train_data)
+"""
 # Define a more complex model architecture with Batch Normalization and Dropout
 model = Sequential([
     Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
@@ -47,7 +86,7 @@ model = Sequential([
     Dense(512, activation='relu'),
     BatchNormalization(),
     Dropout(0.5),
-    Dense(62, activation='softmax')  # EMNIST has 62 classes
+    Dense(num_classes, activation='softmax')
 ])
 
 # Learning rate scheduler
@@ -67,14 +106,16 @@ model.compile(optimizer='adam',
 
 # Train the model
 history = model.fit(
-    train_ds,
-    validation_data=test_ds,
+    train_data, train_labels,  # Use the original training data directly
+    validation_data=(test_data, test_labels),
     epochs=15,
+    batch_size=64,
     callbacks=[LearningRateScheduler(lr_schedule), early_stopping]
 )
 
+
 # Evaluate the model
-test_loss, test_acc = model.evaluate(test_ds)
+test_loss, test_acc = model.evaluate(test_data, test_labels)
 print(f"Test accuracy: {test_acc:.4f}")
 
 # Save the model in .keras format
