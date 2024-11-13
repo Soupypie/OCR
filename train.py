@@ -11,7 +11,8 @@ from matplotlib import pyplot as plt
 import tensorflow_datasets as tfds
 
 # Load the EMNIST dataset (train split)
-ds = tfds.load('emnist', split='train', as_supervised=True, download_and_prepare_kwargs={'file_format': tfds.core.FileFormat.ARRAY_RECORD})
+builder = tfds.builder('my_dataset')
+ds = builder.as_data_source()
 
 # Apply transformations to fix the image orientation (flip and rotate)
 ds = ds.map(lambda image, label: (tf.transpose(image, perm=[1, 0, 2]), label))
