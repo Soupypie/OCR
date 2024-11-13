@@ -55,10 +55,10 @@ def predict_top_characters(image_path, top_k=3):
     
     # Print top K predictions across all mappings
     print("Top predictions for each mapping:")
-    for i, char_map in enumerate([characters1, characters2, characters3, characters4, characters5, characters6]):
+    for i, char_map in enumerate([characters1, characters2]):
         print(f"\nMapping {i+1}:")
         for idx in top_indices:
             print(f"Character: {char_map[idx]}, Confidence: {prediction[idx]:.4f}")
 
 # Test the function on 'input.png'
-predict_top_characters('input.png', top_k=10)
+predict_top_characters('4.png', top_k=10)

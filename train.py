@@ -8,25 +8,20 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.datasets import mnist
 from matplotlib import pyplot as plt
+import tensorflow_datasets as tfds
 
-# load dataset
-(trainX, trainy), (testX, testy) = mnist.load_data()
-# summarize loaded dataset
-print('Train: X=%s, y=%s' % (trainX.shape, trainy.shape))
-print('Test: X=%s, y=%s' % (testX.shape, testy.shape))
+ds = tfds.load('emnist', split='train', shuffle_files=True)
+assert isinstance(ds, tf.data.Dataset)
 
 # Preprocess the data
-train_data = np.array(trainX).reshape(-1, 28, 28, 1).astype('float32')
-test_data = np.array(testX).reshape(-1, 28, 28, 1).astype('float32')
+train_data = np.array(ds['image']).reshape(-1, 28, 28, 1).astype('float32')
+labels = np.array(ds['labels'])
 
 # Normalize pixel values (0-1 range)
-train_data /= 255.0
-test_data /= 255.0
 
 # Convert labels to categorical (for multi-class classification)
-num_classes = len(np.unique(trainy))
-train_labels = to_categorical(trainy, num_classes)
-test_labels = to_categorical(testy, num_classes)
+num_classes = len(np.unique(labels))
+train_labels = to_categorical(labels, num_classes)
 """
 # Data augmentation setup
 datagen = ImageDataGenerator(
